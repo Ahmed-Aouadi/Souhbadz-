@@ -33,7 +33,7 @@ export async function sendOrderTemplate({
   const templateName =
     process.env.WHATSAPP_TEMPLATE_NAME || "new_order";
   const language =
-process.env.WHATSAPP_LANGUAGE || "en";
+process.env.WHATSAPP_LANGUAGE || "en"; 
   if (!accessToken) {
     throw new Error("WHATSAPP_ACCESS_TOKEN is missing");
   }

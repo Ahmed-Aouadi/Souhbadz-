@@ -1,103 +1,47 @@
 const DEFAULT_VERSION = "v23.0";
 
-function graphUrl(path: string) {
-  const version = (process.env.WHATSAPP_VERSION || DEFAULT_VERSION).replace(
-    /^v/,
-    ""
-  );
-  
-
-  return `https://graph.facebook.com/v${version}${path}`;
-}
-
-type SendOrderTemplateParams = {
+type WhatsAppOrder = {
   orderNumber: string;
   customerName: string;
   phone: string;
-  details: string;
+  wilaya?: string;
+  notes?: string;
+  itemsText: string;
   quantity: string | number;
   total: string | number;
 };
 
-export async function sendOrderTemplate({
-  orderNumber,
-  customerName,
-  phone,
-  details,
-  quantity,
-  total,
-}: export async function sendOrderTemplate(order: WhatsAppOrder) {
-  const phoneNumberId = required('WHATSAPP_PHONE_NUMBER_ID')
-  const recipient = required('WHATSAPP_RECIPIENT').replace(/\D/g, '')
-  const templateName =
-    process.env.WHATSAPP_TEMPLATE_NAME?.trim() || 'new_order'
+function required(name: string): string {
+  const value = process.env[name];
 
-  const language =
-    process.env.WHATSAPP_LANGUAGE?.trim() || 'en'
+  if (!value) {
+    throw new Error(`${name} is missing`);
+  }
 
-  return graph<{ messages?: Array<{ id: string }> }>(
-    `/${phoneNumberId}/messages`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+  return value;
+}
 
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to: recipient,
-        type: 'template',
+function graphUrl(path: string): string {
+  const version = (
+    process.env.WHATSAPP_VERSION || DEFAULT_VERSION
+  ).replace(/^v/, "");
 
-        template: {
-          name: templateName,
+  return `https://graph.facebook.com/v${version}${path}`;
+}
 
-          language: {
-            code: language,
-          },
+async function graph<T>(
+  path: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const accessToken = required("WHATSAPP_ACCESS_TOKEN");
 
-          components: [
-            {
-              type: 'body',
-
-              parameters: [
-                {
-                  type: 'text',
-                  text: String(order.orderNumber),
-                },
-                {
-                  type: 'text',
-                  text: String(order.customerName),
-                },
-                {
-                  type: 'text',
-                  text: String(order.phone),
-                },
-                {
-                  type: 'text',
-                  text: String(order.itemsText),
-                },
-                {
-                  type: 'text',
-                  text: String(order.quantity),
-                },
-                {
-                  type: 'text',
-                  text: String(order.total),
-                },
-              ],
-            },
-          ],
-        },
-      }),
-    }
-  )
-};
-
-  const response = await fetch(url, {
-    method: "POST",
+  const response = await fetch(graphUrl(path), {
+    ...options,
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
+      ...(options.headers || {}),
     },
-    body: JSON.stringify(body),
   });
 
   const data = await response.json();
@@ -115,5 +59,119 @@ export async function sendOrderTemplate({
     );
   }
 
-  return data;
+  return data as T;
+}
+
+export async function sendOrderTemplate(
+  order: WhatsAppOrder
+) {
+  const phoneNumberId = required(
+    "WHATSAPP_PHONE_NUMBER_ID"
+  );
+
+  const recipient = required(
+    "WHATSAPP_RECIPIENT"
+  ).replace(/\D/g, "");
+
+  const templateName =
+    process.env.WHATSAPP_TEMPLATE_NAME?.trim() ||
+    "new_order";
+
+  const language =
+    process.env.WHATSAPP_LANGUAGE?.trim() ||
+    "en";
+
+  return graph<{
+    messages?: Array<{ id: string }>;
+  }>(`/${phoneNumberId}/messages`, {
+    method: "POST",
+
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+
+      to: recipient,
+
+      type: "template",
+
+      template: {
+        name: templateName,
+
+        language: {
+          code: language,
+        },
+
+        components: [
+          {
+            type: "body",
+
+            parameters: [
+              {
+                type: "text",
+                text: String(order.orderNumber),
+              },
+
+              {
+                type: "text",
+                text: String(order.customerName),
+              },
+
+              {
+                type: "text",
+                text: String(order.phone),
+              },
+
+              {
+                type: "text",
+                text: String(order.itemsText),
+              },
+
+              {
+                type: "text",
+                text: String(order.quantity),
+              },
+
+              {
+                type: "text",
+                text: String(order.total),
+              },
+            ],
+          },
+        ],
+      },
+    }),
+  });
+}
+
+export async function sendOrderImage(
+  imageUrl: string,
+  caption?: string
+) {
+  const phoneNumberId = required(
+    "WHATSAPP_PHONE_NUMBER_ID"
+  );
+
+  const recipient = required(
+    "WHATSAPP_RECIPIENT"
+  ).replace(/\D/g, "");
+
+  return graph<{
+    messages?: Array<{ id: string }>;
+  }>(`/${phoneNumberId}/messages`, {
+    method: "POST",
+
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+
+      to: recipient,
+
+      type: "image",
+
+      image: {
+        link: imageUrl,
+        ...(caption
+          ? { caption }
+          : {}),
+      },
+    }),
+  });
 }

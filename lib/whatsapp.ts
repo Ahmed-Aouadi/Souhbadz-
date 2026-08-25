@@ -26,70 +26,70 @@ export async function sendOrderTemplate({
   details,
   quantity,
   total,
-}: SendOrderTemplateParams) {
-  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const recipient = process.env.WHATSAPP_RECIPIENT;
+}: export async function sendOrderTemplate(order: WhatsAppOrder) {
+  const phoneNumberId = required('WHATSAPP_PHONE_NUMBER_ID')
+  const recipient = required('WHATSAPP_RECIPIENT').replace(/\D/g, '')
   const templateName =
-    process.env.WHATSAPP_TEMPLATE_NAME || "new_order";
+    process.env.WHATSAPP_TEMPLATE_NAME?.trim() || 'new_order'
+
   const language =
-process.env.WHATSAPP_LANGUAGE || "en"; 
-  if (!accessToken) {
-    throw new Error("WHATSAPP_ACCESS_TOKEN is missing");
-  }
+    process.env.WHATSAPP_LANGUAGE?.trim() || 'en'
 
-  if (!phoneNumberId) {
-    throw new Error("WHATSAPP_PHONE_NUMBER_ID is missing");
-  }
+  return graph<{ messages?: Array<{ id: string }> }>(
+    `/${phoneNumberId}/messages`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
 
-  if (!recipient) {
-    throw new Error("WHATSAPP_RECIPIENT is missing");
-  }
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: recipient,
+        type: 'template',
 
-  const url = graphUrl(`/${phoneNumberId}/messages`);
+        template: {
+          name: templateName,
 
-  const body = {
-    messaging_product: "whatsapp",
-    to: recipient,
-    type: "template",
-    template: {
-      name: templateName,
-      language: {
-        code: language,
-      },
-      components: [
-        {
-          type: "body",
-          parameters: [
+          language: {
+            code: language,
+          },
+
+          components: [
             {
-              type: "text",
-              text: String(orderNumber),
-            },
-            {
-              type: "text",
-              text: String(customerName),
-            },
-            {
-              type: "text",
-              text: String(phone),
-            },
-            {
-              type: "text",
-              text: String(details),
-            },
-            {
-              type: "text",
-              text: String(quantity),
-            },
-            {
-              type: "text",
-              text: String(total),
+              type: 'body',
+
+              parameters: [
+                {
+                  type: 'text',
+                  text: String(order.orderNumber),
+                },
+                {
+                  type: 'text',
+                  text: String(order.customerName),
+                },
+                {
+                  type: 'text',
+                  text: String(order.phone),
+                },
+                {
+                  type: 'text',
+                  text: String(order.itemsText),
+                },
+                {
+                  type: 'text',
+                  text: String(order.quantity),
+                },
+                {
+                  type: 'text',
+                  text: String(order.total),
+                },
+              ],
             },
           ],
         },
-      ],
-    },
-  };
+      }),
+    }
+  )
+};
 
   const response = await fetch(url, {
     method: "POST",

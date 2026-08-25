@@ -81,6 +81,24 @@ export async function sendOrderTemplate(
     process.env.WHATSAPP_LANGUAGE?.trim() ||
     "en";
 
+  /*
+   * Image used in the WhatsApp template header.
+   *
+   * Change "souhbadz.jpg" if your image has a different
+   * filename inside the public folder.
+   */
+  const imageFileName = "souhbadz.jpg";
+
+  const vercelUrl = process.env.VERCEL_URL;
+
+  if (!vercelUrl) {
+    throw new Error(
+      "VERCEL_URL is missing. Cannot create the WhatsApp header image URL."
+    );
+  }
+
+  const imageUrl = `https://${vercelUrl}/${imageFileName}`;
+
   return graph<{
     messages?: Array<{ id: string }>;
   }>(`/${phoneNumberId}/messages`, {
@@ -101,6 +119,34 @@ export async function sendOrderTemplate(
         },
 
         components: [
+          /*
+           * TEMPLATE HEADER
+           * Meta template: Header = Image
+           */
+          {
+            type: "header",
+
+            parameters: [
+              {
+                type: "image",
+
+                image: {
+                  link: imageUrl,
+                },
+              },
+            ],
+          },
+
+          /*
+           * TEMPLATE BODY
+           *
+           * {{1}} = Order number
+           * {{2}} = Customer
+           * {{3}} = Phone
+           * {{4}} = Product
+           * {{5}} = Quantity
+           * {{6}} = Total
+           */
           {
             type: "body",
 
@@ -142,6 +188,12 @@ export async function sendOrderTemplate(
   });
 }
 
+
+/*
+ * Send an image directly to WhatsApp.
+ *
+ * This function is kept because route.ts imports it.
+ */
 export async function sendOrderImage(
   imageUrl: string,
   caption?: string
@@ -168,8 +220,11 @@ export async function sendOrderImage(
 
       image: {
         link: imageUrl,
+
         ...(caption
-          ? { caption }
+          ? {
+              caption,
+            }
           : {}),
       },
     }),

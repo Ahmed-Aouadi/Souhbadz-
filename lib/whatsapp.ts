@@ -5,6 +5,7 @@ function graphUrl(path: string) {
     /^v/,
     ""
   );
+  
 
   return `https://graph.facebook.com/v${version}${path}`;
 }

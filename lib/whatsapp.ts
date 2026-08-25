@@ -50,7 +50,7 @@ export async function sendOrderTemplate(order: WhatsAppOrder) {
   const phoneNumberId = required('WHATSAPP_PHONE_NUMBER_ID')
   const recipient = required('WHATSAPP_RECIPIENT').replace(/\D/g, '')
   const templateName = process.env.WHATSAPP_TEMPLATE_NAME?.trim() || 'new_order'
-  const language = process.env.WHATSAPP_LANGUAGE?.trim() || 'en_US'
+  const language = process.env.WHATSAPP_LANGUAGE?.trim() || 'en'
 
   const details = [
     order.itemsText,

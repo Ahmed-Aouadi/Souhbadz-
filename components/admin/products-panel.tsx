@@ -139,6 +139,17 @@ function ProductForm({
 }
 
 export function ProductsPanel({ products }: { products: Product[] }) {
+  const [query, setQuery] = useState('')
+  const [category, setCategory] = useState('all')
+  const [visibility, setVisibility] = useState('all')
+  const [selected, setSelected] = useState<number[]>([])
+  const categories = [...new Set(products.map(p => p.category).filter(Boolean))]
+  const filtered = useMemo(() => products.filter(p =>
+    (!query || [p.name, p.category, p.description].join(' ').toLowerCase().includes(query.toLowerCase())) &&
+    (category === 'all' || p.category === category) &&
+    (visibility === 'all' || (visibility === 'active' ? p.active : !p.active))
+  ), [products, query, category, visibility])
+  const toggleSelected = (id: number) => setSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id])
   const [mode, setMode] = useState<{ type: 'none' } | { type: 'new' } | { type: 'edit'; product: Product }>({
     type: 'none',
   })
@@ -191,7 +202,8 @@ export function ProductsPanel({ products }: { products: Product[] }) {
                 className="object-cover"
               />
             </div>
-            <input type="checkbox" checked={selected.includes(product.id)} onChange={()=>toggleSelected(product.id)} className="shrink-0" />\n            <div className="min-w-0 flex-1">
+            <input type="checkbox" checked={selected.includes(product.id)} onChange={()=>toggleSelected(product.id)} className="shrink-0" />
+            <div className="min-w-0 flex-1">
               <p className="truncate font-bold">{product.name}</p>
               <p className="text-muted-foreground truncate text-xs">
                 {product.category || 'بدون تصنيف'}

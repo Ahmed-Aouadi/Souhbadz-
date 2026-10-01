@@ -6,6 +6,7 @@ import { ReviewsSection } from '@/components/reviews-section'
 import { StoreHeader } from '@/components/store-header'
 import { getActiveProducts, getApprovedReviews } from '@/lib/queries'
 import { getSettings } from '@/lib/settings'
+import { ensureInventorySchema } from '@/lib/db/inventory'
 import { Palette, Sparkles, Truck } from 'lucide-react'
 import Image from 'next/image'
 
@@ -18,6 +19,7 @@ const FEATURES = [
 ]
 
 export default async function Page() {
+  await ensureInventorySchema()
   const [settings, products, reviews] = await Promise.all([getSettings(), getActiveProducts(), getApprovedReviews()])
 
   return (

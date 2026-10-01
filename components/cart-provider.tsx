@@ -12,6 +12,7 @@ export type CartLine = {
   unitPrice?: number
   options?: { color?: string; size?: string }
   maxStock?: number
+  custom?: boolean
 }
 
 export type Pricing = {

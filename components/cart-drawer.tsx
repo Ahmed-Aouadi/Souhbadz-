@@ -17,7 +17,7 @@ export function CartDrawer() {
   const [status, setStatus] = useState<Status>(null)
   const [pending, setPending] = useState(false)
 
-  const allAvailable = useMemo(() => lines.every((line) => !line.maxStock || line.quantity <= line.maxStock), [lines])
+  const allAvailable = useMemo(() => lines.every((line) => line.maxStock === undefined || line.quantity <= line.maxStock), [lines])
 
   useEffect(() => {
     if (!open) return

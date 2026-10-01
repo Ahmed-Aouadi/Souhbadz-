@@ -95,7 +95,7 @@ function parseVariants(raw: string) {
   let parsed: unknown
   try { parsed = JSON.parse(raw || '[]') } catch { throw new Error('بيانات الخيارات والمخزون غير صحيحة.') }
   if (!Array.isArray(parsed)) throw new Error('بيانات الخيارات غير صحيحة.')
-  return parsed.slice(0, 100).map((v: VariantInput) => ({
+  const variants = parsed.slice(0, 100).map((v: VariantInput) => ({
     sku: String(v?.sku ?? '').trim().slice(0, 60),
     color: String(v?.color ?? '').trim().slice(0, 60),
     size: String(v?.size ?? '').trim().slice(0, 60),
@@ -103,6 +103,13 @@ function parseVariants(raw: string) {
     stock: Math.max(0, Math.min(1000000, Math.round(Number(v.stock) || 0))),
     active: v?.active !== false,
   }))
+  const seen = new Set<string>()
+  for (const variant of variants) {
+    const key = `${variant.color.toLowerCase()}|${variant.size.toLowerCase()}`
+    if (seen.has(key)) throw new Error('يوجد خيار مكرر بنفس اللون والمقاس.')
+    seen.add(key)
+  }
+  return variants
 }
 
 async function saveVariants(productId: number, variantsRaw: string, inventoryEnabled: boolean) {

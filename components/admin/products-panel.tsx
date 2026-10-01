@@ -100,19 +100,24 @@ export function ProductsPanel({ products }: { products: StoreProduct[] }) {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('all')
   const [visibility, setVisibility] = useState('all')
+  const [stockFilter, setStockFilter] = useState('all')
   const [selected, setSelected] = useState<number[]>([])
   const [mode, setMode] = useState<{ type: 'none' } | { type: 'new' } | { type: 'edit'; product: StoreProduct }>({ type: 'none' })
   const categories = [...new Set(products.map((p) => p.category).filter(Boolean))]
   const filtered = useMemo(() => products.filter((p) =>
     (!query || [p.name, p.category, p.description].join(' ').toLowerCase().includes(query.toLowerCase())) &&
     (category === 'all' || p.category === category) &&
-    (visibility === 'all' || (visibility === 'active' ? p.active : !p.active))
-  ), [products, query, category, visibility])
+    (visibility === 'all' || (visibility === 'active' ? p.active : !p.active)) &&
+    (stockFilter === 'all' || !p.inventoryEnabled ||
+      (stockFilter === 'out' ? p.variants.reduce((s, v) => s + v.stock, 0) === 0 :
+       stockFilter === 'low' ? p.variants.reduce((s, v) => s + v.stock, 0) > 0 && p.variants.reduce((s, v) => s + v.stock, 0) < 10 :
+       p.variants.reduce((s, v) => s + v.stock, 0) > 0))
+  ), [products, query, category, visibility, stockFilter])
 
   return (
     <div className="flex flex-col gap-4">
       <div className="bg-card border-border rounded-2xl border p-3 sm:p-4">
-        <div className="flex flex-col gap-2 sm:flex-row"><div className="relative flex-1"><Search className="text-muted-foreground absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2" /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="بحث..." className="border-input w-full rounded-xl border py-2.5 pr-9 pl-3 text-sm" /></div><select value={category} onChange={(e) => setCategory(e.target.value)} className="border-input rounded-xl border px-3 py-2.5 text-sm"><option value="all">كل التصنيفات</option>{categories.map((c) => <option key={c} value={c}>{c}</option>)}</select><select value={visibility} onChange={(e) => setVisibility(e.target.value)} className="border-input rounded-xl border px-3 py-2.5 text-sm"><option value="all">كل الحالات</option><option value="active">نشط</option><option value="inactive">مخفي</option></select></div>
+        <div className="flex flex-col gap-2 sm:flex-row"><div className="relative flex-1"><Search className="text-muted-foreground absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2" /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="بحث..." className="border-input w-full rounded-xl border py-2.5 pr-9 pl-3 text-sm" /></div><select value={category} onChange={(e) => setCategory(e.target.value)} className="border-input rounded-xl border px-3 py-2.5 text-sm"><option value="all">كل التصنيفات</option>{categories.map((c) => <option key={c} value={c}>{c}</option>)}</select><select value={visibility} onChange={(e) => setVisibility(e.target.value)} className="border-input rounded-xl border px-3 py-2.5 text-sm"><option value="all">كل الحالات</option><option value="active">نشط</option><option value="inactive">مخفي</option></select><select value={stockFilter} onChange={(e) => setStockFilter(e.target.value)} className="border-input rounded-xl border px-3 py-2.5 text-sm"><option value="all">كل المخزون</option><option value="in">متوفر</option><option value="low">مخزون منخفض</option><option value="out">نفد</option></select></div>
       </div>
       <div className="flex items-center justify-between gap-2"><div><h2 className="text-lg font-black">المنتجات <span className="text-muted-foreground text-sm">({filtered.length})</span></h2><label className="text-muted-foreground flex items-center gap-2 text-xs"><input type="checkbox" checked={filtered.length > 0 && selected.length === filtered.length} onChange={(e) => setSelected(e.target.checked ? filtered.map((p) => p.id) : [])} /> تحديد النتائج</label></div><button type="button" onClick={() => setMode({ type: 'new' })} className="bg-primary text-primary-foreground flex items-center gap-1 rounded-xl px-3 py-2.5 text-xs font-black"><Plus className="h-4 w-4" /> منتج</button></div>
 

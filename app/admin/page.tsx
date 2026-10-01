@@ -3,6 +3,7 @@ import { LoginForm } from '@/components/admin/login-form'
 import { isAdmin } from '@/lib/admin-auth'
 import { getAllOrders, getAllProducts, getAllReviews } from '@/lib/queries'
 import { getSettings } from '@/lib/settings'
+import { ensureInventorySchema } from '@/lib/db/inventory'
 
 export const metadata = {
   title: 'لوحة التحكم | SouhbaDz',
@@ -17,6 +18,7 @@ export default async function AdminPage() {
     return <LoginForm />
   }
 
+  await ensureInventorySchema()
   const [settings, products, reviews, orders] = await Promise.all([
     getSettings(),
     getAllProducts(),

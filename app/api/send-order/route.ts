@@ -174,10 +174,13 @@ export async function POST(request: Request) {
 
       if ('existing' in result) {
         orderId = result.existing.id
-        if (result.existing.notificationStatus === 'sent') {
-          return Response.json({ ok: true, orderId, message: 'هذا الطلب مسجل بالفعل.' })
-        }
-        items = []
+        return Response.json({
+          ok: true,
+          orderId,
+          message: result.existing.notificationStatus === 'sent'
+            ? 'هذا الطلب مسجل بالفعل.'
+            : 'هذا الطلب مسجل بالفعل وسيظهر في لوحة التحكم للمتابعة.',
+        })
       } else {
         orderId = result.row?.id ?? null
         items = result.built

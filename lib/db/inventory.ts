@@ -35,6 +35,11 @@ export async function ensureInventorySchema() {
           "createdAt" timestamp NOT NULL DEFAULT now()
         );
         CREATE INDEX IF NOT EXISTS stock_movements_variant_id_idx ON stock_movements ("variantId");
+        CREATE TABLE IF NOT EXISTS order_rate_limits (
+          "rateKey" text PRIMARY KEY,
+          "windowStart" timestamp NOT NULL,
+          count integer NOT NULL DEFAULT 0
+        );
       `)
     })().catch((error) => {
       ready = null

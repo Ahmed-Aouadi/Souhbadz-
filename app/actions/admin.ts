@@ -226,6 +226,20 @@ export async function toggleReview(id: number, approved: boolean) {
   refresh()
 }
 
+export async function updateReview(id: number, input: { name: string; rating: number; comment: string }): Promise<ActionResult> {
+  await requireAdmin()
+  if (!isDbConfigured) return DB_REQUIRED
+  if (!Number.isInteger(id) || id <= 0) return { ok: false, message: 'التقييم غير موجود.' }
+  const name = String(input.name ?? '').trim().slice(0, 60)
+  const comment = String(input.comment ?? '').trim().slice(0, 600)
+  const rating = Math.round(Number(input.rating))
+  if (name.length < 2) return { ok: false, message: 'الاسم يجب أن يحتوي على حرفين على الأقل.' }
+  if (!Number.isFinite(rating) || rating < 1 || rating > 5) return { ok: false, message: 'التقييم يجب أن يكون من 1 إلى 5.' }
+  await db.update(reviews).set({ name, rating, comment }).where(eq(reviews.id, id))
+  refresh()
+  return { ok: true, message: 'تم تحديث التقييم.' }
+}
+
 export async function deleteReview(id: number) {
   await requireAdmin()
   if (!isDbConfigured) return

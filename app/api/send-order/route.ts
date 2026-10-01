@@ -55,6 +55,7 @@ type IncomingItem = {
   productId: number
   variantId?: number
   quantity: number
+  custom?: boolean
 }
 
 export async function POST(request: Request) {
@@ -83,8 +84,9 @@ export async function POST(request: Request) {
         productId: Math.round(Number(value.productId) || 0),
         variantId: value.variantId == null ? undefined : Math.round(Number(value.variantId) || 0),
         quantity: Math.min(Math.max(Math.round(Number(value.quantity) || 0), 1), 1000),
+        custom: value.custom === true,
       }
-    }).filter((item) => item.productId > 0)
+    }).filter((item) => item.productId > 0 || item.custom)
 
     if (!incoming.length) return jsonError('السلة فارغة.')
     const quantity = incoming.reduce((sum, item) => sum + item.quantity, 0)
@@ -117,6 +119,12 @@ export async function POST(request: Request) {
         let runningTotal = 0
 
         for (const item of incoming) {
+          if (item.custom) {
+            const unit = unitPriceFor(quantity, settings)
+            built.push({ productId: -1, name: 'بادج مخصص', quantity: item.quantity, unitPrice: unit })
+            runningTotal += unit * item.quantity
+            continue
+          }
           const [product] = await tx.select().from(products).where(eq(products.id, item.productId)).limit(1)
           if (!product || !product.active) throw new Error('أحد المنتجات لم يعد متاحاً.')
           if (product.inventoryEnabled) {
@@ -178,9 +186,9 @@ export async function POST(request: Request) {
       revalidatePath('/admin')
     } else {
       items = incoming.map((item) => ({
-        productId: item.productId,
+        productId: item.custom ? -1 : item.productId,
         variantId: item.variantId,
-        name: 'منتج',
+        name: item.custom ? 'بادج مخصص' : 'منتج',
         quantity: item.quantity,
         unitPrice: unitPriceFor(quantity, settings),
       }))

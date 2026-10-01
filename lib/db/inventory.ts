@@ -8,6 +8,44 @@ export async function ensureInventorySchema() {
   if (!ready) {
     ready = (async () => {
       await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS settings (
+          key text PRIMARY KEY,
+          value text NOT NULL,
+          "updatedAt" timestamp NOT NULL DEFAULT now()
+        );
+        CREATE TABLE IF NOT EXISTS products (
+          id serial PRIMARY KEY,
+          name text NOT NULL,
+          category text NOT NULL DEFAULT '',
+          description text NOT NULL DEFAULT '',
+          "imageUrl" text NOT NULL DEFAULT '',
+          price integer,
+          active boolean NOT NULL DEFAULT true,
+          "inventoryEnabled" boolean NOT NULL DEFAULT false,
+          "sortOrder" integer NOT NULL DEFAULT 0,
+          "createdAt" timestamp NOT NULL DEFAULT now()
+        );
+        CREATE TABLE IF NOT EXISTS reviews (
+          id serial PRIMARY KEY,
+          name text NOT NULL,
+          rating integer NOT NULL,
+          comment text NOT NULL DEFAULT '',
+          approved boolean NOT NULL DEFAULT true,
+          "createdAt" timestamp NOT NULL DEFAULT now()
+        );
+        CREATE TABLE IF NOT EXISTS orders (
+          id serial PRIMARY KEY,
+          "customerName" text NOT NULL,
+          phone text NOT NULL,
+          wilaya text NOT NULL,
+          notes text NOT NULL DEFAULT '',
+          items jsonb NOT NULL DEFAULT '[]'::jsonb,
+          quantity integer NOT NULL,
+          "unitPrice" integer NOT NULL,
+          total integer NOT NULL,
+          status text NOT NULL DEFAULT 'new',
+          "createdAt" timestamp NOT NULL DEFAULT now()
+        );
         ALTER TABLE products ADD COLUMN IF NOT EXISTS "inventoryEnabled" boolean NOT NULL DEFAULT false;
         ALTER TABLE orders ADD COLUMN IF NOT EXISTS "requestKey" text;
         ALTER TABLE orders ADD COLUMN IF NOT EXISTS "notificationStatus" text NOT NULL DEFAULT 'pending';

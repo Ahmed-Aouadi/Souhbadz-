@@ -1,119 +1,22 @@
 'use client'
 
-import { deleteOrder, setOrderStatus } from '@/app/actions/admin'
+import { bulkOrderStatus, deleteOrder, setOrderStatus } from '@/app/actions/admin'
 import type { Order, OrderItem } from '@/lib/db/schema'
-import { Phone, Trash2 } from 'lucide-react'
+import { CheckSquare, Download, Phone, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
 
-const STATUSES: { value: string; label: string; className: string }[] = [
-  { value: 'new', label: 'جديد', className: 'bg-accent/25 text-accent-foreground' },
-  { value: 'confirmed', label: 'مؤكد', className: 'bg-primary text-primary-foreground' },
-  { value: 'delivered', label: 'تم التوصيل', className: 'bg-success text-success-foreground' },
-  { value: 'cancelled', label: 'ملغى', className: 'bg-destructive text-destructive-foreground' },
-]
-
-export function OrdersPanel({ orders }: { orders: Order[] }) {
-  const totalRevenue = orders
-    .filter((order) => order.status === 'delivered')
-    .reduce((sum, order) => sum + order.total, 0)
-
-  return (
-    <div className="flex flex-col gap-5">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="bg-card border-border rounded-xl border p-4">
-          <p className="text-muted-foreground text-xs font-bold">كل الطلبات</p>
-          <p className="text-2xl font-black">{orders.length}</p>
-        </div>
-        <div className="bg-card border-border rounded-xl border p-4">
-          <p className="text-muted-foreground text-xs font-bold">طلبات جديدة</p>
-          <p className="text-2xl font-black">{orders.filter((o) => o.status === 'new').length}</p>
-        </div>
-        <div className="bg-card border-border rounded-xl border p-4">
-          <p className="text-muted-foreground text-xs font-bold">قطع مطلوبة</p>
-          <p className="text-2xl font-black">{orders.reduce((sum, o) => sum + o.quantity, 0)}</p>
-        </div>
-        <div className="bg-card border-border rounded-xl border p-4">
-          <p className="text-muted-foreground text-xs font-bold">مبيعات موصّلة</p>
-          <p className="text-2xl font-black">{totalRevenue} دج</p>
-        </div>
-      </div>
-
-      <ul className="flex flex-col gap-3">
-        {orders.map((order) => {
-          const items = (order.items as OrderItem[]) ?? []
-          return (
-            <li key={order.id} className="bg-card border-border rounded-xl border p-4">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <p className="font-bold">
-                    #{order.id} — {order.customerName}
-                  </p>
-                  <p className="text-muted-foreground text-xs">
-                    {order.wilaya} · {new Date(order.createdAt).toLocaleString('ar-DZ')}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <a
-                    href={`tel:${order.phone}`}
-                    className="bg-secondary flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold"
-                  >
-                    <Phone className="h-3.5 w-3.5" aria-hidden="true" />
-                    {order.phone}
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (confirm(`حذف الطلب #${order.id}؟`)) deleteOrder(order.id)
-                    }}
-                    className="text-destructive hover:bg-destructive/10 rounded-lg p-2 transition"
-                  >
-                    <Trash2 className="h-4 w-4" aria-hidden="true" />
-                    <span className="sr-only">حذف الطلب</span>
-                  </button>
-                </div>
-              </div>
-
-              <ul className="text-muted-foreground mt-3 flex flex-col gap-1 text-sm">
-                {items.map((item, index) => (
-                  <li key={`${order.id}-${index}`}>
-                    {item.name} × {item.quantity}
-                  </li>
-                ))}
-              </ul>
-
-              {order.notes && (
-                <p className="bg-secondary mt-3 rounded-lg p-2 text-xs leading-relaxed">{order.notes}</p>
-              )}
-
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm font-bold">
-                  {order.quantity} قطعة × {order.unitPrice} دج ={' '}
-                  <span className="font-black">{order.total} دج</span>
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {STATUSES.map((status) => (
-                    <button
-                      key={status.value}
-                      type="button"
-                      onClick={() => setOrderStatus(order.id, status.value)}
-                      className={`rounded-full px-3 py-1 text-xs font-bold transition ${
-                        order.status === status.value
-                          ? status.className
-                          : 'bg-secondary text-secondary-foreground hover:bg-accent/20'
-                      }`}
-                    >
-                      {status.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </li>
-          )
-        })}
-      </ul>
-
-      {orders.length === 0 && (
-        <p className="text-muted-foreground text-center text-sm">لا توجد طلبات بعد.</p>
-      )}
-    </div>
-  )
+const STATUSES=[['new','جديد'],['confirmed','مؤكد'],['shipped','تم الشحن'],['delivered','تم التوصيل'],['cancelled','ملغى']] as const
+export function OrdersPanel({orders}:{orders:Order[]}) {
+  const [query,setQuery]=useState(''),[status,setStatus]=useState('all'),[selected,setSelected]=useState<number[]>([])
+  const filtered=useMemo(()=>orders.filter(o=>(status==='all'||o.status===status)&&(!query||[o.customerName,o.phone,o.wilaya,String(o.id)].join(' ').toLowerCase().includes(query.toLowerCase()))),[orders,status,query])
+  const toggle=(id:number)=>setSelected(s=>s.includes(id)?s.filter(x=>x!==id):[...s,id])
+  const exportCsv=()=>{const rows=[['رقم','العميل','الهاتف','الولاية','الكمية','المجموع','الحالة','التاريخ'],...filtered.map(o=>[o.id,o.customerName,o.phone,o.wilaya,o.quantity,o.total,o.status,new Date(o.createdAt).toLocaleString('ar-DZ')])];const csv='\ufeff'+rows.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='souhbadz-orders.csv';a.click();URL.revokeObjectURL(a.href)}
+  return <div className="flex flex-col gap-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4"><div className="bg-card border-border rounded-xl border p-4"><p className="text-muted-foreground text-xs font-bold">كل الطلبات</p><p className="text-2xl font-black">{orders.length}</p></div><div className="bg-card border-border rounded-xl border p-4"><p className="text-muted-foreground text-xs font-bold">جديدة</p><p className="text-2xl font-black">{orders.filter(o=>o.status==='new').length}</p></div><div className="bg-card border-border rounded-xl border p-4"><p className="text-muted-foreground text-xs font-bold">قيد التنفيذ</p><p className="text-2xl font-black">{orders.filter(o=>['confirmed','shipped'].includes(o.status)).length}</p></div><div className="bg-card border-border rounded-xl border p-4"><p className="text-muted-foreground text-xs font-bold">مكتملة</p><p className="text-2xl font-black">{orders.filter(o=>o.status==='delivered').reduce((s,o)=>s+o.total,0)} دج</p></div></div>
+    <div className="bg-card border-border rounded-2xl border p-4"><div className="flex flex-col gap-3 md:flex-row"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="بحث بالاسم، الهاتف، الولاية أو رقم الطلب" className="border-input w-full rounded-lg border px-3 py-2 text-sm"/><select value={status} onChange={e=>setStatus(e.target.value)} className="border-input rounded-lg border px-3 py-2 text-sm"><option value="all">كل الحالات</option>{STATUSES.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select><button onClick={exportCsv} className="bg-secondary flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-bold"><Download className="h-4 w-4"/>تصدير CSV</button></div></div>
+    {selected.length>0&&<div className="bg-primary/10 border-primary/20 flex flex-wrap items-center gap-2 rounded-xl border p-3"><span className="text-sm font-bold">محدد: {selected.length}</span>{STATUSES.map(([v,l])=><button key={v} onClick={()=>bulkOrderStatus(selected,v).then(()=>setSelected([]))} className="bg-card rounded-lg px-3 py-1.5 text-xs font-bold">{l}</button>)}<button onClick={()=>setSelected([])} className="text-muted-foreground px-2 text-xs">إلغاء</button></div>}
+    <div className="flex items-center justify-between"><label className="flex items-center gap-2 text-sm font-bold"><input type="checkbox" checked={filtered.length>0&&selected.length===filtered.length} onChange={e=>setSelected(e.target.checked?filtered.map(o=>o.id):[])}/ تحديد الكل</label><span className="text-muted-foreground text-xs">{filtered.length} نتيجة</span></div>
+    <ul className="flex flex-col gap-3">{filtered.map(order=>{const items=(order.items as OrderItem[])??[];return <li key={order.id} className="bg-card border-border rounded-xl border p-4"><div className="flex flex-wrap items-start gap-3"><input type="checkbox" checked={selected.includes(order.id)} onChange={()=>toggle(order.id)} className="mt-1"/><div className="min-w-0 flex-1"><div className="flex flex-wrap justify-between gap-2"><div><p className="font-bold">#{order.id} — {order.customerName}</p><p className="text-muted-foreground text-xs">{order.wilaya} · {new Date(order.createdAt).toLocaleString('ar-DZ')}</p></div><a href={`tel:${order.phone}`} className="bg-secondary flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold"><Phone className="h-3.5 w-3.5"/>{order.phone}</a></div><ul className="text-muted-foreground mt-3 text-sm">{items.map((item,i)=><li key={i}>{item.name} × {item.quantity}</li>)}</ul>{order.notes&&<p className="bg-secondary mt-3 rounded-lg p-2 text-xs">{order.notes}</p>}<div className="mt-3 flex flex-wrap items-center justify-between gap-3"><p className="text-sm font-bold">{order.quantity} قطعة = <span className="font-black">{order.total} دج</span></p><div className="flex flex-wrap gap-1.5">{STATUSES.map(([v,l])=><button key={v} onClick={()=>setOrderStatus(order.id,v)} className={`rounded-full px-3 py-1 text-xs font-bold ${order.status===v?'bg-primary text-primary-foreground':'bg-secondary'}`}>{l}</button>)}<button onClick={()=>confirm(`حذف الطلب #${order.id}؟`)&&deleteOrder(order.id)} className="text-destructive rounded-full p-2"><Trash2 className="h-4 w-4"/></button></div></div></div></div></li>})}</ul>
+    {!filtered.length&&<p className="text-muted-foreground py-10 text-center text-sm">لا توجد نتائج مطابقة.</p>}
+  </div>
 }

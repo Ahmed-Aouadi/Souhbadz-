@@ -44,6 +44,7 @@ export function CustomBadgeBuilder() {
         name: 'بادج مخصص',
         imageUrl,
         unitPrice,
+        custom: true,
       },
       quantity,
     )

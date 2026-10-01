@@ -26,7 +26,7 @@ export function StoreHeader({ storeName }: { storeName: string }) {
 
           <button type="button" onClick={() => setOpen(true)} className="bg-primary text-primary-foreground relative flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-black shadow-sm">
             <ShoppingBag className="h-4 w-4" />
-            <span className="hidden xs:inline">السلة</span>
+            <span>السلة</span>
             {totalQuantity > 0 && <span className="bg-accent text-accent-foreground absolute -right-2 -top-2 flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-[10px] font-black">{totalQuantity}</span>}
           </button>
         </div>

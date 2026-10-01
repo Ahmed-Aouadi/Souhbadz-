@@ -3,7 +3,7 @@
 import { bulkProductAction, createProduct, deleteProduct, toggleProduct, updateProduct } from '@/app/actions/admin'
 import type { ProductVariant } from '@/lib/db/schema'
 import type { StoreProduct } from '@/lib/queries'
-import { CheckSquare, Eye, EyeOff, Pencil, Plus, Search, Trash2, X, Package, Minus } from 'lucide-react'
+import { CheckSquare, Eye, EyeOff, Pencil, Plus, Search, Trash2, X, Package } from 'lucide-react'
 import Image from 'next/image'
 import { useActionState, useEffect, useMemo, useState } from 'react'
 

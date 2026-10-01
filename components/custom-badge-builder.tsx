@@ -39,9 +39,11 @@ export function CustomBadgeBuilder() {
 
     add(
       {
-        id: -Date.now(),
+        key: `custom:${Date.now()}`,
+        productId: -1,
         name: 'بادج مخصص',
         imageUrl,
+        unitPrice,
       },
       quantity,
     )

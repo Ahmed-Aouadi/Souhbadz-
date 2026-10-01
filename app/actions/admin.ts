@@ -1,6 +1,6 @@
 'use server'
 
-import { ADMIN_COOKIE, requireAdmin, verifyPassword } from '@/lib/admin-auth'
+import { ADMIN_COOKIE, hashAdminPassword, requireAdmin, verifyPassword } from '@/lib/admin-auth'
 import { ensureInventorySchema } from '@/lib/db/inventory'
 import { db, isDbConfigured } from '@/lib/db'
 import { orders, productVariants, products, reviews, stockMovements } from '@/lib/db/schema'
@@ -68,7 +68,7 @@ export async function changePassword(_prev: ActionResult | null, form: FormData)
   if (!isDbConfigured) return DB_REQUIRED
   const password = String(form.get('newPassword') ?? '')
   if (password.length < 8) return { ok: false, message: 'كلمة السر يجب أن تكون 8 أحرف على الأقل.' }
-  await setSetting('admin_password', password)
+  await setSetting('admin_password', hashAdminPassword(password))
   ;(await cookies()).delete(ADMIN_COOKIE)
   revalidatePath('/admin')
   return { ok: true, message: 'تم تغيير كلمة السر. سجل الدخول من جديد.' }

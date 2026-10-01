@@ -5,7 +5,8 @@ import { OrdersPanel } from '@/components/admin/orders-panel'
 import { ProductsPanel } from '@/components/admin/products-panel'
 import { ReviewsPanel } from '@/components/admin/reviews-panel'
 import { SettingsPanel } from '@/components/admin/settings-panel'
-import type { Order, Product, Review } from '@/lib/db/schema'
+import type { Order, Review } from '@/lib/db/schema'
+import type { StoreProduct } from '@/lib/queries'
 import type { StoreSettings } from '@/lib/settings'
 import { BarChart3, Boxes, ClipboardList, LogOut, PackageCheck, Star } from 'lucide-react'
 import Image from 'next/image'
@@ -20,7 +21,7 @@ const TABS = [
 ] as const
 type TabId = (typeof TABS)[number]['id']
 
-export function Dashboard({ settings, products, reviews, orders }: { settings: StoreSettings; products: Product[]; reviews: Review[]; orders: Order[] }) {
+export function Dashboard({ settings, products, reviews, orders }: { settings: StoreSettings; products: StoreProduct[]; reviews: Review[]; orders: Order[] }) {
   const [tab, setTab] = useState<TabId>('overview')
   const stats = useMemo(() => {
     const delivered = orders.filter(o => o.status === 'delivered')

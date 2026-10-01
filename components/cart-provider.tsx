@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
 export type CartLine = {
   id: number
@@ -42,6 +42,9 @@ export function CartProvider({
   children: React.ReactNode
 }) {
   const [lines, setLines] = useState<CartLine[]>([])
+  const [hydrated, setHydrated] = useState(false)
+  useEffect(() => { try { const raw = localStorage.getItem('souhbadz-cart'); if (raw) { const parsed = JSON.parse(raw); if (Array.isArray(parsed)) setLines(parsed.filter((x): x is CartLine => x && Number.isInteger(x.id) && typeof x.name === 'string' && typeof x.quantity === 'number')) } } catch {} finally { setHydrated(true) } }, [])
+  useEffect(() => { if (hydrated) { try { localStorage.setItem('souhbadz-cart', JSON.stringify(lines)) } catch {} } }, [lines, hydrated])
   const [open, setOpen] = useState(false)
 
   const add = useCallback((item: Omit<CartLine, 'quantity'>, quantity = 1) => {

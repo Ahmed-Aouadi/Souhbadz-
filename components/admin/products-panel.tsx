@@ -1,10 +1,10 @@
 'use client'
 
-import { createProduct, deleteProduct, toggleProduct, updateProduct } from '@/app/actions/admin'
+import { bulkProductAction, createProduct, deleteProduct, toggleProduct, updateProduct } from '@/app/actions/admin'
 import type { Product } from '@/lib/db/schema'
-import { Eye, EyeOff, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { CheckSquare, Eye, EyeOff, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
 import Image from 'next/image'
-import { useActionState, useEffect, useState } from 'react'
+import { useActionState, useEffect, useMemo, useState } from 'react'
 
 const inputClass =
   'border-input focus:border-accent focus:ring-ring/30 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2'
@@ -145,8 +145,8 @@ export function ProductsPanel({ products }: { products: Product[] }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-black">المنتجات ({products.length})</h2>
+      <div className="bg-card border-border rounded-2xl border p-4"><div className="flex flex-col gap-3 md:flex-row"><div className="relative flex-1"><Search className="text-muted-foreground absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2"/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="بحث في المنتجات..." className="border-input w-full rounded-lg border py-2 pr-9 pl-3 text-sm"/></div><select value={category} onChange={e=>setCategory(e.target.value)} className="border-input rounded-lg border px-3 py-2 text-sm"><option value="all">كل التصنيفات</option>{categories.map(c=><option key={c} value={c}>{c}</option>)}</select><select value={visibility} onChange={e=>setVisibility(e.target.value)} className="border-input rounded-lg border px-3 py-2 text-sm"><option value="all">كل الحالات</option><option value="active">نشط</option><option value="inactive">مخفي</option></select></div></div>\n      <div className="flex items-center justify-between gap-3">
+        <div><h2 className="text-lg font-black">المنتجات ({filtered.length} / {products.length})</h2><label className="text-muted-foreground mt-1 flex items-center gap-2 text-xs"><input type="checkbox" checked={filtered.length>0&&selected.length===filtered.length} onChange={e=>setSelected(e.target.checked?filtered.map(p=>p.id):[])} /> تحديد النتائج</label></div>
         {mode.type === 'none' && (
           <button
             type="button"
@@ -159,7 +159,7 @@ export function ProductsPanel({ products }: { products: Product[] }) {
         )}
       </div>
 
-      {mode.type !== 'none' && (
+      {selected.length>0 && <div className="bg-primary/10 border-primary/20 flex flex-wrap items-center gap-2 rounded-xl border p-3"><CheckSquare className="h-4 w-4"/><span className="text-sm font-bold">{selected.length} محدد</span><button onClick={()=>bulkProductAction(selected,'activate').then(()=>setSelected([]))} className="bg-card rounded-lg px-3 py-1.5 text-xs font-bold">تفعيل</button><button onClick={()=>bulkProductAction(selected,'deactivate').then(()=>setSelected([]))} className="bg-card rounded-lg px-3 py-1.5 text-xs font-bold">إخفاء</button><button onClick={()=>confirm('حذف المنتجات المحددة؟')&&bulkProductAction(selected,'delete').then(()=>setSelected([]))} className="bg-destructive text-destructive-foreground rounded-lg px-3 py-1.5 text-xs font-bold">حذف</button></div>}\n\n      {mode.type !== 'none' && (
         <div className="bg-card border-border rounded-2xl border p-5 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="font-bold">{mode.type === 'new' ? 'إضافة منتج' : 'تعديل منتج'}</h3>
@@ -177,7 +177,7 @@ export function ProductsPanel({ products }: { products: Product[] }) {
       )}
 
       <ul className="flex flex-col gap-3">
-        {products.map((product) => (
+        {filtered.map((product) => (
           <li
             key={product.id}
             className="bg-card border-border flex items-center gap-3 rounded-xl border p-3"
@@ -191,7 +191,7 @@ export function ProductsPanel({ products }: { products: Product[] }) {
                 className="object-cover"
               />
             </div>
-            <div className="min-w-0 flex-1">
+            <input type="checkbox" checked={selected.includes(product.id)} onChange={()=>toggleSelected(product.id)} className="shrink-0" />\n            <div className="min-w-0 flex-1">
               <p className="truncate font-bold">{product.name}</p>
               <p className="text-muted-foreground truncate text-xs">
                 {product.category || 'بدون تصنيف'}
@@ -236,7 +236,7 @@ export function ProductsPanel({ products }: { products: Product[] }) {
         ))}
       </ul>
 
-      {products.length === 0 && (
+      {filtered.length === 0 && (
         <p className="text-muted-foreground text-center text-sm">لا توجد منتجات بعد.</p>
       )}
     </div>

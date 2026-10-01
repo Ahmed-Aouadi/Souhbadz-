@@ -147,6 +147,55 @@ export function ProductGrid({ products }: { products: StoreProduct[] }) {
                 className="bg-primary text-primary-foreground mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-sm font-black shadow-lg disabled:opacity-40">
                 <ShoppingBag className="h-5 w-5" /> إضافة إلى السلة <ChevronLeft className="h-4 w-4" />
               </button>
+
+              {(() => {
+                const similar = products
+                  .filter((product) => product.id !== selected.id && (!selected.category || product.category === selected.category))
+                  .slice(0, 6)
+
+                return similar.length > 0 ? (
+                  <section className="mt-7 border-t pt-5">
+                    <div className="mb-3 flex items-center justify-between">
+                      <div>
+                        <h3 className="text-base font-black">منتجات مشابهة</h3>
+                        <p className="text-muted-foreground mt-0.5 text-[11px]">قد تعجبك هذه المنتجات أيضاً</p>
+                      </div>
+                      <span className="text-muted-foreground text-[10px] font-bold">{similar.length} منتجات</span>
+                    </div>
+
+                    <div className="flex gap-3 overflow-x-auto pb-2">
+                      {similar.map((product) => {
+                        const available = !product.inventoryEnabled || product.variants.some((v) => v.stock > 0)
+                        return (
+                          <button
+                            key={product.id}
+                            type="button"
+                            onClick={() => openProduct(product)}
+                            className="bg-card border-border w-36 shrink-0 overflow-hidden rounded-2xl border text-right shadow-sm transition active:scale-[.98]"
+                          >
+                            <div className="bg-secondary relative aspect-square">
+                              <Image
+                                src={product.imageUrl || '/placeholder.svg'}
+                                alt={product.name}
+                                fill
+                                sizes="144px"
+                                className="object-cover"
+                              />
+                              {product.inventoryEnabled && !available && (
+                                <span className="absolute right-1.5 top-1.5 rounded-full bg-black/75 px-1.5 py-0.5 text-[9px] font-black text-white">نفد</span>
+                              )}
+                            </div>
+                            <div className="p-2.5">
+                              <p className="line-clamp-2 min-h-9 text-xs font-black leading-4">{product.name}</p>
+                              <p className="mt-1.5 text-xs font-black">{product.price ?? pricing.unitPrice} دج</p>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </section>
+                ) : null
+              })()}
             </div>
           </div>
         </div>

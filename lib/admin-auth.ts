@@ -1,12 +1,29 @@
-import { createHmac, timingSafeEqual } from 'crypto'
+import { createHmac, randomBytes, scryptSync, timingSafeEqual } from 'crypto'
 import { cookies } from 'next/headers'
 import { getSetting } from '@/lib/settings'
 
 export const ADMIN_COOKIE = 'sdz_admin'
+
 async function adminPassword() {
   const password = (await getSetting('admin_password')) || process.env.ADMIN_PASSWORD
   if (!password) throw new Error('ADMIN_PASSWORD is not configured')
   return password
+}
+
+function hashPassword(password: string) {
+  const salt = randomBytes(16).toString('hex')
+  const derived = scryptSync(password, salt, 64).toString('hex')
+  return `scrypt$${salt}$${derived}`
+}
+
+function verifyStoredPassword(input: string, stored: string) {
+  if (stored.startsWith('scrypt$')) {
+    const [, salt, expected] = stored.split('$')
+    if (!salt || !expected) return false
+    const actual = scryptSync(input, salt, 64).toString('hex')
+    return safeEqual(actual, expected)
+  }
+  return safeEqual(input, stored)
 }
 
 function sign(password: string) {
@@ -21,10 +38,9 @@ function safeEqual(a: string, b: string) {
   return timingSafeEqual(bufA, bufB)
 }
 
-/** Verifies a submitted password and returns the session token to store in a cookie. */
 export async function verifyPassword(input: string) {
   const password = await adminPassword()
-  if (!input || !safeEqual(input, password)) return null
+  if (!input || !verifyStoredPassword(input, password)) return null
   return sign(password)
 }
 
@@ -36,4 +52,8 @@ export async function isAdmin() {
 
 export async function requireAdmin() {
   if (!(await isAdmin())) throw new Error('غير مصرح')
+}
+
+export function hashAdminPassword(password: string) {
+  return hashPassword(password)
 }
